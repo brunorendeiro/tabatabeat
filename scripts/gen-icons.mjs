@@ -1,5 +1,7 @@
 // One-off generator for PWA icons — no external image libs available in this environment,
-// so we build minimal valid PNGs by hand (zlib deflate of raw RGBA scanlines).
+// so we build minimal valid PNGs by hand (zlib deflate of raw RGBA scanlines). Shapes are
+// drawn analytically (circles/rects/line-segments in a 0..100 coordinate space) with 4x4
+// supersampling for anti-aliased edges, instead of a coarse blocky pixel grid.
 import { deflateSync } from 'node:zlib'
 import { writeFileSync } from 'node:fs'
 
@@ -28,32 +30,57 @@ function chunk(type, data) {
   return Buffer.concat([len, typeData, crc])
 }
 
-// Stopwatch pictogram on a 10x10 grid: ring, two ticks on top, a bold hand pointing to "20".
-const GRID = [
-  '0011111100',
-  '0110000110',
-  '1211000121',
-  '1100000011',
-  '1103330011',
-  '1103330011',
-  '1100000011',
-  '1211000121',
-  '0110000110',
-  '0011111100',
-]
+const BG = [255, 90, 54] // accent orange-red
+const FACE = [245, 241, 236] // near-white watch face
+const DARK = [18, 16, 14] // app background, used for hand/crown/pivot
 
-function drawIcon(size, bg, ring, tick, hand) {
+function dist(x, y, cx, cy) {
+  return Math.hypot(x - cx, y - cy)
+}
+
+function segDist(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const lenSq = dx * dx + dy * dy
+  let t = lenSq === 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  return dist(px, py, x1 + t * dx, y1 + t * dy)
+}
+
+function inRoundRect(x, y, rx, ry, rw, rh, radius) {
+  const cx = Math.min(Math.max(x, rx + radius), rx + rw - radius)
+  const cy = Math.min(Math.max(y, ry + radius), ry + rh - radius)
+  if (x >= rx + radius && x <= rx + rw - radius) return y >= ry && y <= ry + rh
+  if (y >= ry + radius && y <= ry + rh - radius) return x >= rx && x <= rx + rw
+  return dist(x, y, cx, cy) <= radius
+}
+
+// Classic stopwatch silhouette: round face, top crown, one hand mid-sweep, center pivot.
+function colorAt(x, y) {
+  if (dist(x, y, 50, 50) <= 5.5) return DARK // center pivot
+  if (segDist(x, y, 50, 50, 64, 26) <= 4.4) return DARK // hand
+  if (inRoundRect(x, y, 44, 5, 12, 12, 4)) return DARK // crown
+  if (dist(x, y, 50, 50) <= 37) return FACE // watch face
+  return BG // background
+}
+
+function drawIcon(size) {
+  const SS = 4
   const px = new Uint8Array(size * size * 4)
-  const gridSize = GRID.length
-  const cell = size / gridSize
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const gx = Math.min(gridSize - 1, Math.floor(x / cell))
-      const gy = Math.min(gridSize - 1, Math.floor(y / cell))
-      const symbol = GRID[gy][gx]
-      const color = symbol === '1' ? ring : symbol === '2' ? tick : symbol === '3' ? hand : bg
+      let r = 0, g = 0, b = 0
+      for (let sy = 0; sy < SS; sy++) {
+        for (let sx = 0; sx < SS; sx++) {
+          const nx = ((x + (sx + 0.5) / SS) / size) * 100
+          const ny = ((y + (sy + 0.5) / SS) / size) * 100
+          const [cr, cg, cb] = colorAt(nx, ny)
+          r += cr; g += cg; b += cb
+        }
+      }
+      const n = SS * SS
       const i = (y * size + x) * 4
-      px[i] = color[0]; px[i + 1] = color[1]; px[i + 2] = color[2]; px[i + 3] = 255
+      px[i] = Math.round(r / n); px[i + 1] = Math.round(g / n); px[i + 2] = Math.round(b / n); px[i + 3] = 255
     }
   }
   return px
@@ -86,17 +113,10 @@ function encodePng(size, pixels) {
   ])
 }
 
-const bg = [18, 16, 14] // app background
-const ring = [255, 90, 54] // accent orange-red
-const tick = [255, 209, 102] // amber
-const hand = [245, 241, 236] // near-white
-
 for (const size of [192, 512]) {
-  const pixels = drawIcon(size, bg, ring, tick, hand)
-  writeFileSync(new URL(`../public/icon-${size}.png`, import.meta.url), encodePng(size, pixels))
+  writeFileSync(new URL(`../public/icon-${size}.png`, import.meta.url), encodePng(size, drawIcon(size)))
 }
 
-const favPixels = drawIcon(64, bg, ring, tick, hand)
-writeFileSync(new URL('../public/icon-64.png', import.meta.url), encodePng(64, favPixels))
+writeFileSync(new URL('../public/icon-64.png', import.meta.url), encodePng(64, drawIcon(64)))
 
 console.log('Icons generated.')
