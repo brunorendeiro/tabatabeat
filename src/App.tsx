@@ -85,6 +85,7 @@ export default function App() {
   const audioRef = useRef<TabataAudio>(new TabataAudio())
   const voiceRef = useRef(new TabataVoice())
   const wakeLockRef = useRef(new WakeLockManager())
+  const motivationTimeoutRef = useRef<number | null>(null)
   const install = useInstallPrompt()
   const t = ui[locale]
 
@@ -122,9 +123,17 @@ export default function App() {
     return () => {
       audio.close()
       voice.stop()
+      clearPendingMotivation()
       void wakeLock.release()
     }
   }, [])
+
+  function clearPendingMotivation() {
+    if (motivationTimeoutRef.current != null) {
+      window.clearTimeout(motivationTimeoutRef.current)
+      motivationTimeoutRef.current = null
+    }
+  }
 
   function maybeSpeakMotivation(phase: Phase) {
     const lang = speechLang[locale]
@@ -143,7 +152,14 @@ export default function App() {
     }
     if (phrase) {
       const text = phrase
-      window.setTimeout(() => voiceRef.current.speak(text, lang), 250)
+      clearPendingMotivation()
+      // Speak mid-phase rather than right at the transition — the music (and our own
+      // beep) already mark the boundary, so this avoids talking over that moment.
+      const delayMs = phase.kind === 'done' ? 250 : Math.max(250, (phase.seconds / 2) * 1000)
+      motivationTimeoutRef.current = window.setTimeout(() => {
+        motivationTimeoutRef.current = null
+        voiceRef.current.speak(text, lang)
+      }, delayMs)
     }
   }
 
@@ -177,6 +193,7 @@ export default function App() {
   function handleReset() {
     audioRef.current.stopMusic()
     voiceRef.current.stop()
+    clearPendingMotivation()
     void wakeLockRef.current.release()
     engine.reset()
   }
@@ -184,6 +201,7 @@ export default function App() {
   function handlePause() {
     audioRef.current.pauseAll()
     voiceRef.current.stop()
+    clearPendingMotivation()
     engine.pause()
   }
 
