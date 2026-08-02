@@ -59,6 +59,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin: 0;
 }
 
 .brand-mark { font-size: 28px; }

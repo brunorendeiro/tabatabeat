@@ -229,13 +229,13 @@ export default function App() {
 
   return <div className="app">
     <header className="topbar">
-      <div className="brand">
+      <h1 className="brand">
         <span className="brand-mark">⏱️</span>
         <div>
           <strong>{t.title}</strong>
           <small>{t.tagline}</small>
         </div>
-      </div>
+      </h1>
       <div className="locale-switch" role="group" aria-label="Language">
         {locales.map(item => (
           <button key={item.id} className={locale === item.id ? 'active' : ''} onClick={() => setLocale(item.id)}>{item.label}</button>
