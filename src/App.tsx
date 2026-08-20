@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { detectLocale, locales, motivationalPhrases, speechLang, ui, type Locale } from './i18n'
-import { getStoredConsent, loadAnalytics } from './analytics'
+import { getStoredConsent, loadAnalytics, loadAds } from './analytics'
 import CookieConsent from './CookieConsent'
 import {
   buildSchedule,
@@ -95,7 +95,10 @@ export default function App() {
   }, [locale])
 
   useEffect(() => {
-    if (getStoredConsent() === 'granted') loadAnalytics()
+    if (getStoredConsent() === 'granted') {
+      loadAnalytics()
+      loadAds()
+    }
   }, [])
 
   useEffect(() => {
