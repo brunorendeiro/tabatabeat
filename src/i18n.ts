@@ -77,6 +77,7 @@ type UiStrings = {
   cookieBody: string
   cookieAccept: string
   cookieReject: string
+  adLabel: string
 }
 
 export const ui: Record<Locale, UiStrings> = {
@@ -110,6 +111,7 @@ export const ui: Record<Locale, UiStrings> = {
     cookieBody: 'Uso o Google Analytics e o Google AdSense para perceber quantas pessoas usam o TabataBeat. Aceitas cookies de análise e publicidade?',
     cookieAccept: 'Aceitar',
     cookieReject: 'Recusar',
+    adLabel: 'Publicidade',
   },
   en: {
     title: 'TabataBeat',
@@ -141,6 +143,7 @@ export const ui: Record<Locale, UiStrings> = {
     cookieBody: 'I use Google Analytics and Google AdSense to understand how many people use TabataBeat. Do you accept analytics and advertising cookies?',
     cookieAccept: 'Accept',
     cookieReject: 'Reject',
+    adLabel: 'Advertisement',
   },
   de: {
     title: 'TabataBeat',
@@ -172,5 +175,6 @@ export const ui: Record<Locale, UiStrings> = {
     cookieBody: 'Ich verwende Google Analytics und Google AdSense, um zu verstehen, wie viele Menschen TabataBeat nutzen. Akzeptierst du Analyse- und Werbe-Cookies?',
     cookieAccept: 'Akzeptieren',
     cookieReject: 'Ablehnen',
+    adLabel: 'Werbung',
   },
 }

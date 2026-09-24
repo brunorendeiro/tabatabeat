@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { detectLocale, locales, motivationalPhrases, speechLang, ui, type Locale } from './i18n'
 import { getStoredConsent, loadAnalytics, loadAds } from './analytics'
 import CookieConsent from './CookieConsent'
+import AdSlot from './AdSlot'
 import {
   buildSchedule,
   formatClock,
@@ -273,6 +274,8 @@ export default function App() {
         </section>
 
         <button type="button" className="play-button" onClick={handleStart}>▶ {t.startButton}</button>
+
+        <AdSlot locale={locale} />
       </>
     )}
 

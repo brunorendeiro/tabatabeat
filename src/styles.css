@@ -163,6 +163,23 @@ body {
   font-size: 13px;
 }
 
+.ad-slot {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.ad-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-soft);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
 .play-button {
   width: 100%;
   background: var(--accent);

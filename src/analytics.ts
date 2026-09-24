@@ -40,8 +40,13 @@ export function loadAds() {
   script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4561414438757131`
   document.head.appendChild(script)
 
+  // Auto ads (enable_page_level_ads) are intentionally left off: in an app like this
+  // one, the runner screen (live timer) is a thin/interactive screen with almost no
+  // text, and Google's automatic placement was putting ads there — which triggered
+  // an AdSense "low value content" policy violation. We use a single manual ad unit
+  // (see AdSlot.tsx) placed only on the setup screen, which has real textual content.
   window.adsbygoogle = window.adsbygoogle || []
-  window.adsbygoogle.push({ google_ad_client: 'ca-pub-4561414438757131', enable_page_level_ads: true })
+  window.adsbygoogle.push({ google_ad_client: 'ca-pub-4561414438757131' })
 }
 
 export function setConsent(value: Consent) {
