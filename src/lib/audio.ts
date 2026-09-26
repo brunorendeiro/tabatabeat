@@ -18,19 +18,17 @@ export class TabataAudio {
   // ctx time at which the current tabata started while the music was still decoding —
   // lets setMusicBuffer() join in at the right offset instead of skipping the whole tabata.
   private pendingMusicStart: number | null = null
+  private paused = false
 
   /** Must be called synchronously inside a user-gesture handler (e.g. onClick of Play). */
   ensureContext(): AudioContext {
     if (!this.ctx) {
-      // iOS Safari mutes Web Audio when the ring/silent switch is off unless the page
-      // declares itself as media playback (Safari 16.4+; ignored elsewhere).
-      const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession
-      if (session) session.type = 'playback'
       this.ctx = new AudioContext()
       this.musicGain = this.ctx.createGain()
       this.musicGain.gain.value = 1
       this.musicGain.connect(this.ctx.destination)
     }
+    this.paused = false
     if (this.ctx.state === 'suspended') void this.ctx.resume()
     return this.ctx
   }
@@ -52,8 +50,17 @@ export class TabataAudio {
     osc.stop(start + duration + 0.02)
   }
 
+  /** iOS can interrupt the context (e.g. when speech synthesis grabs the audio
+   * session); bring it back unless the user paused on purpose. */
+  private recover() {
+    if (this.ctx && !this.paused && this.ctx.state !== 'running' && this.ctx.state !== 'closed') {
+      void this.ctx.resume()
+    }
+  }
+
   playCue(kind: PhaseKind) {
     if (!this.ctx) return
+    this.recover()
     switch (kind) {
       case 'work':
         this.tone({ freq: 1046, delay: 0, duration: 0.22, type: 'square', gain: 0.28 })
@@ -78,6 +85,7 @@ export class TabataAudio {
 
   tick() {
     if (!this.ctx) return
+    this.recover()
     this.tone({ freq: 880, delay: 0, duration: 0.06, type: 'square', gain: 0.16 })
   }
 
@@ -133,10 +141,12 @@ export class TabataAudio {
    * background music) in place. AudioBufferSourceNode has no pause() of its own, so
    * suspending the whole context is the standard way to pause Web Audio playback. */
   pauseAll() {
+    this.paused = true
     void this.ctx?.suspend()
   }
 
   resumeAll() {
+    this.paused = false
     void this.ctx?.resume()
   }
 
