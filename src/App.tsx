@@ -169,8 +169,8 @@ export default function App() {
 
   function handlePhaseEnter(phase: Phase) {
     audioRef.current.playCue(phase.kind)
-    if (phase.kind === 'work' && phase.roundIndex === 0 && audioRef.current.hasMusic()) {
-      audioRef.current.playMusicSegment(0, audioRef.current.musicDuration())
+    if (phase.kind === 'work' && phase.roundIndex === 0) {
+      audioRef.current.startMusic()
     }
     if (phase.kind === 'restBetween' || phase.kind === 'done') {
       audioRef.current.stopMusic()

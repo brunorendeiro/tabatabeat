@@ -15,10 +15,17 @@ export class TabataAudio {
   private musicBuffer: AudioBuffer | null = null
   private musicSource: AudioBufferSourceNode | null = null
   private musicGain: GainNode | null = null
+  // ctx time at which the current tabata started while the music was still decoding —
+  // lets setMusicBuffer() join in at the right offset instead of skipping the whole tabata.
+  private pendingMusicStart: number | null = null
 
   /** Must be called synchronously inside a user-gesture handler (e.g. onClick of Play). */
   ensureContext(): AudioContext {
     if (!this.ctx) {
+      // iOS Safari mutes Web Audio when the ring/silent switch is off unless the page
+      // declares itself as media playback (Safari 16.4+; ignored elsewhere).
+      const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession
+      if (session) session.type = 'playback'
       this.ctx = new AudioContext()
       this.musicGain = this.ctx.createGain()
       this.musicGain.gain.value = 1
@@ -76,14 +83,22 @@ export class TabataAudio {
 
   setMusicBuffer(buffer: AudioBuffer | null) {
     this.musicBuffer = buffer
+    if (buffer && this.ctx && this.pendingMusicStart !== null) {
+      const elapsed = this.ctx.currentTime - this.pendingMusicStart
+      this.pendingMusicStart = null
+      this.playMusicSegment(elapsed, buffer.duration)
+    }
   }
 
-  hasMusic(): boolean {
-    return this.musicBuffer !== null
-  }
-
-  musicDuration(): number {
-    return this.musicBuffer?.duration ?? 0
+  /** Starts the tabata's music from the top; if it hasn't finished decoding yet, it
+   * starts (in sync) as soon as it does. */
+  startMusic() {
+    if (!this.ctx) return
+    if (this.musicBuffer) {
+      this.playMusicSegment(0, this.musicBuffer.duration)
+    } else {
+      this.pendingMusicStart = this.ctx.currentTime
+    }
   }
 
   /** Plays [trimStart, trimEnd] of the loaded music buffer starting now, layered under the beep cues. */
@@ -102,6 +117,7 @@ export class TabataAudio {
   }
 
   stopMusic() {
+    this.pendingMusicStart = null
     if (this.musicSource) {
       try {
         this.musicSource.stop()
